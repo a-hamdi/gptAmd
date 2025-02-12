@@ -1,0 +1,2 @@
+[console_scripts]
+gpt2-generate = sample:main
