@@ -35,16 +35,18 @@ class WikidataDataset(Dataset):
             print(f"Loading {buffer_size} examples...")
             
             for item in full_dataset:
-                if not item or not isinstance(item, dict) or "text" not in item:
-                    print("Skipping invalid item")
+                if not isinstance(item, dict):
                     continue
                     
-                if not item["text"] or not isinstance(item["text"], str):
-                    print("Skipping empty or invalid text")
+                text = item.get("text", "")
+                if not isinstance(text, str):
+                    text = str(text)
+                
+                if len(text.strip()) < 10:  # Skip very short texts
                     continue
                     
                 try:
-                    processed = self._process_text(item["text"])
+                    processed = self._process_text(text)
                     self.examples.append(processed)
                     
                     if len(self.examples) % 100 == 0:
@@ -69,12 +71,16 @@ class WikidataDataset(Dataset):
     
     def _process_text(self, text: str) -> Dict[str, torch.Tensor]:
         """Process a single text example."""
+        # Ensure text is not empty
+        if not text or not isinstance(text, str):
+            text = str(text)
+        
         # Tokenize text
         try:
             tokens = self.tokenizer.encode(text)
         except Exception as e:
             print(f"Error tokenizing text: {e}")
-            tokens = [self.tokenizer.encoder["<|endoftext|>"]]
+            tokens = [self.tokenizer.encoder["<|endoftext|>"]] * 2
         
         # Ensure we have at least 2 tokens (for input and label)
         if len(tokens) < 2:
